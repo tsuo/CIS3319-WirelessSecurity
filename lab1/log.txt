@@ -12,3 +12,23 @@
 [CLIENT 4] ...Now being served
 [CLIENT 4] I received sdari32rdwe32
 [CLIENT 4] DISCONNECTED
+
+=== NEW SESSION ===
+[CLIENT 4] Awaiting service...
+[CLIENT 4] ...Now being served
+[CLIENT 4] I received yoyoyo
+[CLIENT 6] Awaiting service...
+[CLIENT 6] ...Now being served
+[CLIENT 6] I received yoyo
+[CLIENT 6] DISCONNECTED
+[CLIENT 4] DISCONNECTED
+
+=== NEW SESSION [2020-02-03 18:59:11]===
+[CLIENT 4] Awaiting service...
+[CLIENT 4] ...Now being served
+[CLIENT 4] I received dsad
+[CLIENT 4] I received fqwe
+[CLIENT 4] I received hehehe
+[CLIENT 4] I received yoyoyoy
+[CLIENT 4] I received hello there
+[CLIENT 4] DISCONNECTED

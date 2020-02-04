@@ -31,8 +31,8 @@ typedef struct{
 
 // structure containing the global queues and monitor variables
 typedef struct{
-	char **words;		// the words/dictionary list
-	int wrdlen;		// the length of the dictionary
+	//char **words;		// the words/dictionary list
+	//int wrdlen;		// the length of the dictionary
 	queue *clients_queue;	// the queue for connected clients
 	queue *logs_queue;	// the queue for logs
 	int num_workers;	// the number of worker threads
@@ -48,7 +48,7 @@ void load_words(char***, int*, char*);	// load words into shared_data.words
 void free_words(char***, int*);	// free/nullify shared_data.words
 void init_shared_data(shared_data *);		// initialize a shared_data object
 void destroy_shared_data(shared_data *);	// free/nullify shared_data obj
-int search_word(int, shared_data *, char *, char *); //ret 1 = word exist. 0 = word no exist
+int encryption_stuff(int, shared_data *, char *, char *); //ret 1 = word exist. 0 = word no exist
 
 // MONITOR FUNCTIONS
 log *get_log(shared_data *);		  // monitor function that returns a log if exist

@@ -1,9 +1,11 @@
 #include "server.h"
 #include "filereader.h"
 
+#include <time.h> // used for logging debug
+
 // setting default values to struct shared_data object
 void init_shared_data(shared_data *glob){
-	load_words(&glob->words, &glob->wrdlen, "words.txt");
+	//load_words(&glob->words, &glob->wrdlen, "words.txt");
 	glob->clients_queue = createQueue();
 	glob->logs_queue = createQueue();
 	glob->num_workers = WORKERS_NO;
@@ -15,7 +17,7 @@ void init_shared_data(shared_data *glob){
 
 // nullifying the shared_data struct
 void destroy_shared_data(shared_data *glob){
-	free_words(&glob->words, &glob->wrdlen);
+	//free_words(&glob->words, &glob->wrdlen);
 	destroyQueue(glob->clients_queue);
 	destroyQueue(glob->logs_queue);
 	glob->num_workers = 0;
@@ -152,7 +154,12 @@ void add_client(shared_data *glob, int clientfd)
 void *logger(void *args) /// arguments = struct shared_data *
 {
 	FILE *file = fopen("log.txt", "a+");	// open a new log file
-	fputs("\n=== NEW SESSION ===\n", file);	// append NEW SESSION separator
+	//fputs("\n=== NEW SESSION [", file);	// append NEW SESSION separator
+	time_t t = time(NULL);
+	struct tm ct = *localtime(&t);
+	fprintf(file, "\n=== NEW SESSION [%d-%02d-%02d %02d:%02d:%02d]===\n",
+			ct.tm_year+1900, ct.tm_mon + 1, ct.tm_mday, 
+			ct.tm_hour, ct.tm_min, ct.tm_sec);
 	shared_data *data = args;		// parse void *args to shared_data *data
 	log *delog = NULL;			// temporary variable that stores dequeue'd logs
 
