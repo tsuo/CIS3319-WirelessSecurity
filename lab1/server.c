@@ -3,6 +3,9 @@
 
 #include <time.h> // used for logging debug
 
+/// source: linux.die.net/man/3/ecb_crypt
+#include <rpc/des_crypt.h> // for fast-DES encryption
+
 // setting default values to struct shared_data object
 void init_shared_data(shared_data *glob){
 	//load_words(&glob->words, &glob->wrdlen, "words.txt");
@@ -32,22 +35,33 @@ void destroy_shared_data(shared_data *glob){
 // The word to be searched is char *word. char *send is the output text of the result
 int encryption_stuff(int clientfd, shared_data *glob, char *send, char *recv)
 {
+	/////// set up encryption key
+	char key[8] = "abcdEFGH";
+	des_setparity(key);
+
+	
+	//// display encrypted text
+	printf("[RECV %d] Encrypted Text: %s\n", clientfd, recv);
+
+
 	////////	
 	// DECRYPT RECEIVED MESSAGE IN HERE	
 	// message in *recv
+	ecb_crypt(key, recv, BUFF_SIZE, DES_DECRYPT);	
+	printf("[RECV %d] Plain Text: %s\n", clientfd, recv);	
 
-	
 	// also
 
 	//////
 	// ENCRYPT SEND MESSAGE HERE
 	// message in *send		
 	
-	strcpy(send, "I received ");
-	strcat(send, recv);
-
+	//strcpy(send, "I received your message, Client ");
+	sprintf(send, "I received your [%s] message, Client %d\n", recv, clientfd);
+	printf("[SEND %d] Plain Text: %s\n", clientfd, send);
+	ecb_crypt(key, send, BUFF_SIZE, DES_ENCRYPT);
+	printf("[SEND %d] Encrypted Text: %s\n", clientfd, send);
 	
-
 	return 0;	
 }
 
@@ -220,6 +234,7 @@ void *serve_client(void *args)	// args = struct shared_data *
 		// service loop
 		while(recvReturn > 0)
 		{
+			printf("______________________________\n");
 			// if string ends with a \n then replace it with \0
 			if(msgrec[msglen-1] == '\n')
 				msgrec[msglen-1] = '\0';
@@ -233,8 +248,8 @@ void *serve_client(void *args)	// args = struct shared_data *
 			add_log(data, clientfd, msgsend);
 		
 
-			printf("[CLIENT %d] %s\n", clientfd, msgrec);
-			printf("[RESULT %d] %s\n", clientfd, msgsend);
+			//printf("[RECV %d] %s\n", clientfd, msgrec);
+			//printf("[SEND %d] %s\n", clientfd, msgsend);
 			
 
 			recvReturn = recv(clientfd, msgrec, BUFF_SIZE, 0);
@@ -265,7 +280,7 @@ void *serve_client(void *args)	// args = struct shared_data *
 
 int main(int argc, char **argv)
 {
-	fclose(fopen("log.txt", "a+")); // open/create new file for log
+	//fclose(fopen("log.txt", "a+")); // open/create new file for log
 
 	// INITIALIZING SERVER AND SOCKET
 	int servfd = -1, optval = 1;
@@ -312,7 +327,7 @@ int main(int argc, char **argv)
 	pthread_t workers[WORKERS_NO + 1]; // WORKERS_NO + 1  is the logger thread	
 	for(i = 0; i < WORKERS_NO; i++)
 		pthread_create(&workers[i], NULL, serve_client, &globals);
-	pthread_create(&workers[WORKERS_NO], NULL, logger, &globals); // create logger thread
+	//pthread_create(&workers[WORKERS_NO], NULL, logger, &globals); // create logger thread
 		
 
 

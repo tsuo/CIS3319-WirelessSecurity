@@ -12,7 +12,7 @@
 
 #include "queue.h" //queue is a queue that supports generic typing
 
-#define BUFF_SIZE 256
+#define BUFF_SIZE 64
 #define WORKERS_NO 2  //how many workers there are
 #define WELCOME_MSG "Hello!"
 #define DICT_PATH "words.txt"

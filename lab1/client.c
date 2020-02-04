@@ -7,16 +7,25 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>  //for htons()
 
+/// source: linux.die.net/man/3/ecb_crypt
+#include <rpc/des_crypt.h>  // for fast-DES encryption
+
 #define PORTNO 6969
 
 //#include "filereader.h"
 
 int main(int argc, char **argv)
 {
-	size_t buffsize = 256;
+	size_t buffsize = 64;
 	char *msgrec = (char*)malloc(buffsize * sizeof(char));
-
 	char *msgsend = (char*)malloc(buffsize * sizeof(char));
+
+	////////////////////////////////
+	/// set up encryption keys
+	char key[8] = "abcdEFGH";
+	des_setparity(key);
+	printf("KEY: %s\n", key);
+	///////////////////////////////
 
 	int servfd = -1; 
 	servfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -56,11 +65,15 @@ int main(int argc, char **argv)
 		memset(msgrec, 0, buffsize);
 		printf("Message: ");
 		getline(&msgsend, &buffsize, stdin);
-		
+		msgsend[strlen(msgsend) - 1] = '\0';  //remove the new line character
+		printf("______________________________\n");
+
 		//////
 		// ENCRYPT SEND MESSAGE HERE	
-		// message in *msgsend		
-
+		// message in *msgsend
+		printf("[SEND %d] Plain Text: %s\n", servfd, msgsend);
+		ecb_crypt(key, msgsend, buffsize, DES_ENCRYPT);	
+		printf("[SEND %d] Encrypted Text: %s\n", servfd, msgsend);
 
 		// implementing escape character
 		// 27  is  ^[  in console
@@ -72,7 +85,7 @@ int main(int argc, char **argv)
 			close(servfd);
 		}		
 		
-		printf("[SENDING] %s", msgsend);
+		//printf("[SENDING] %s", msgsend);
 		send(servfd, msgsend, buffsize, 0);
 
 		recvReturn = recv(servfd, msgrec, 256, 0);
@@ -85,9 +98,10 @@ int main(int argc, char **argv)
 			/////////
 			// DECRYPT RECEIVED MESSAGE HERE	
 			// message in *msgrec
-
-			printf("[SERVER %d] %s\n", servfd, msgrec) 
-		};
+			printf("[RECV %d] Encrypted Text: %s\n", servfd, msgrec);
+			ecb_crypt(key, msgrec, buffsize, DES_DECRYPT);	
+			printf("[RECV %d] Plain Text: %s\n", servfd, msgrec);
+		}
 	}
 
 	free(msgsend);
