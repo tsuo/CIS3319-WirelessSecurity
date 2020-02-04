@@ -32,26 +32,21 @@ void destroy_shared_data(shared_data *glob){
 // The word to be searched is char *word. char *send is the output text of the result
 int encryption_stuff(int clientfd, shared_data *glob, char *send, char *recv)
 {
-	/*
-	int i;
-	
-	for(i = 0; i < glob->wrdlen; i++)
-	{
-		if(strcmp(glob->words[i], recv) == 0)
-		{
-			strcpy(send, "(CORRECT)\t");
-			strcat(send, recv);
-			return 1;
-		}
-	}
+	////////	
+	// DECRYPT RECEIVED MESSAGE IN HERE	
+	// message in *recv
 
 	
-	strcpy(send, "(INCORRECT)\t");
-	strcat(send, recv);
-	*/
+	// also
 
+	//////
+	// ENCRYPT SEND MESSAGE HERE
+	// message in *send		
+	
 	strcpy(send, "I received ");
 	strcat(send, recv);
+
+	
 
 	return 0;	
 }

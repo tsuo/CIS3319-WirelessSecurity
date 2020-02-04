@@ -56,6 +56,11 @@ int main(int argc, char **argv)
 		memset(msgrec, 0, buffsize);
 		printf("Message: ");
 		getline(&msgsend, &buffsize, stdin);
+		
+		//////
+		// ENCRYPT SEND MESSAGE HERE	
+		// message in *msgsend		
+
 
 		// implementing escape character
 		// 27  is  ^[  in console
@@ -76,7 +81,13 @@ int main(int argc, char **argv)
 			printf("LOST CONNECTION WITH SERVER [%d]\n", servfd);
 			break;
 		}
-		else printf("[SERVER %d] %s\n", servfd, msgrec);
+		else{ 
+			/////////
+			// DECRYPT RECEIVED MESSAGE HERE	
+			// message in *msgrec
+
+			printf("[SERVER %d] %s\n", servfd, msgrec) 
+		};
 	}
 
 	free(msgsend);
