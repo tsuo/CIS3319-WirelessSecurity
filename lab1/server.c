@@ -192,11 +192,8 @@ void *logger(void *args) /// arguments = struct shared_data *
 		fflush(file); // flush just in case
 
 		// free the temporary log and char * variables
-		printf("***********YO1  %p*************\n", msgsend);
 		free(delog);
-		printf("***********YO2  %p*************\n", msgsend);
 		//free(msgsend);
-		printf("***********YO3  %p*************\n", msgsend);
 		delog = NULL;
 		//msgsend = NULL;
 	}
@@ -209,6 +206,11 @@ void *serve_client(void *args)	// args = struct shared_data *
 	shared_data *data = args;	// parsing arg to shared_data
 	client *tempcli = NULL;		// temporary variable that stores dequeue'd client
 	int clientfd;			// temporary variable stores connected client sockets
+	
+	// initializing buffers
+	char *msgsend = (char*)malloc(BUFF_SIZE * sizeof(char));
+	char *msgrec = (char*)malloc(BUFF_SIZE * sizeof(char));	
+	// ------------------------------------
 
 	while(1)
 	{
@@ -216,11 +218,6 @@ void *serve_client(void *args)	// args = struct shared_data *
 		client *temp = get_client(data);
 		clientfd = temp->fd;
 		free(tempcli);
-
-		// initializing buffers
-		char *msgsend = (char*)malloc(BUFF_SIZE * sizeof(char));
-		char *msgrec = (char*)malloc(BUFF_SIZE * sizeof(char));	
-		// ------------------------------------
 
 
 		// START SERVING CLIENTS		
@@ -269,12 +266,14 @@ void *serve_client(void *args)	// args = struct shared_data *
 		printf("[CLIENT %d] DISCONNECTED\n", clientfd);
 
 		// FREE MEMORY
+		/*
 		if(msgsend != NULL)
 			free(msgsend);
 		if(msgrec != NULL)	
 			free(msgrec);
 		msgsend = NULL;
 		msgrec = NULL;
+		*/
 	}	
 	
 	return NULL;
