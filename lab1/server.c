@@ -172,15 +172,16 @@ void *logger(void *args) /// arguments = struct shared_data *
 	shared_data *data = args;		// parse void *args to shared_data *data
 	log *delog = NULL;			// temporary variable that stores dequeue'd logs
 
-	char *msgsend = NULL;  // temp variable that store message to be logged
-
+	//char *msgsend = NULL;  // temp variable that store message to be logged
+	char *msgsend = (char*)malloc(BUFF_SIZE * sizeof(char));
+	
 	while(1)
 	{	
 		/// CALL MONITOR FUNCTION TO GET NEXT LOG
 		delog = get_log(data);		
 	
 		// nullifies the memory	
-		msgsend = (char*)malloc(BUFF_SIZE * sizeof(char));			
+		//msgsend = (char*)malloc(BUFF_SIZE * sizeof(char));			
 		memset(msgsend, 0, BUFF_SIZE);
 
 		// format the string
@@ -191,10 +192,13 @@ void *logger(void *args) /// arguments = struct shared_data *
 		fflush(file); // flush just in case
 
 		// free the temporary log and char * variables
+		printf("***********YO1  %p*************\n", msgsend);
 		free(delog);
-		free(msgsend);
+		printf("***********YO2  %p*************\n", msgsend);
+		//free(msgsend);
+		printf("***********YO3  %p*************\n", msgsend);
 		delog = NULL;
-		msgsend = NULL;
+		//msgsend = NULL;
 	}
 }
 
@@ -327,7 +331,7 @@ int main(int argc, char **argv)
 	pthread_t workers[WORKERS_NO + 1]; // WORKERS_NO + 1  is the logger thread	
 	for(i = 0; i < WORKERS_NO; i++)
 		pthread_create(&workers[i], NULL, serve_client, &globals);
-	//pthread_create(&workers[WORKERS_NO], NULL, logger, &globals); // create logger thread
+	pthread_create(&workers[WORKERS_NO], NULL, logger, &globals); // create logger thread
 		
 
 
