@@ -16,15 +16,20 @@
 
 int main(int argc, char **argv)
 {
-	size_t buffsize = 64;
+	size_t buffsize = 128;
 	char *msgrec = (char*)malloc(buffsize * sizeof(char));
 	char *msgsend = (char*)malloc(buffsize * sizeof(char));
 
 	////////////////////////////////
 	/// set up encryption keys
-	char key[8] = "abcdEFGH";
-	des_setparity(key);
-	printf("KEY: %s\n", key);
+	FILE *f = fopen("key.txt", "r");
+	char key1[8];
+	//char key2[8] = "testkey2";
+	//char key3[8] = "testkey3";
+	fgets(key1, 9, f);
+	des_setparity(key1);
+	fclose(f);
+	printf("KEY: %s\n", key1);
 	///////////////////////////////
 
 	int servfd = -1; 
@@ -72,7 +77,7 @@ int main(int argc, char **argv)
 		// ENCRYPT SEND MESSAGE HERE	
 		// message in *msgsend
 		printf("[SEND %d] Plain Text: %s\n", servfd, msgsend);
-		ecb_crypt(key, msgsend, buffsize, DES_ENCRYPT);	
+		ecb_crypt(key1, msgsend, buffsize, DES_ENCRYPT);	
 		printf("[SEND %d] Encrypted Text: %s\n", servfd, msgsend);
 
 		// implementing escape character
@@ -99,7 +104,7 @@ int main(int argc, char **argv)
 			// DECRYPT RECEIVED MESSAGE HERE	
 			// message in *msgrec
 			printf("[RECV %d] Encrypted Text: %s\n", servfd, msgrec);
-			ecb_crypt(key, msgrec, buffsize, DES_DECRYPT);	
+			ecb_crypt(key1, msgrec, buffsize, DES_DECRYPT);	
 			printf("[RECV %d] Plain Text: %s\n", servfd, msgrec);
 		}
 	}

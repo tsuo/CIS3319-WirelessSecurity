@@ -36,8 +36,11 @@ void destroy_shared_data(shared_data *glob){
 int encryption_stuff(int clientfd, shared_data *glob, char *send, char *recv)
 {
 	/////// set up encryption key
-	char key[8] = "abcdEFGH";
+	FILE *f = fopen("key.txt", "r");
+	char key[8];
+	fgets(key, 9, f);
 	des_setparity(key);
+	fclose(f);
 
 	
 	//// display encrypted text
