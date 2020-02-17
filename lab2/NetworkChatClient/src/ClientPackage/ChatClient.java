@@ -15,7 +15,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
 import javax.crypto.Mac;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
@@ -31,9 +34,17 @@ public class ChatClient {
     private String host;
     private int port;
     private Socket sock;
+    
     private String hash;
-    private String msgReceive;
-    final private String secret;
+    
+    private Mac sha256_HMAC;
+    private Cipher DES;
+           
+    private SecretKeySpec desKey;
+    private SecretKeySpec hmacKey;
+    
+    final private String ALGO_HMAC;
+    final private String ALGO_DES;
     final private String deskey;
     final private String hmackey;
     
@@ -43,15 +54,23 @@ public class ChatClient {
     SendThread send;
     Scanner sc;
     
-    public ChatClient(){
+    public ChatClient() throws Exception{
         this.sock = null;
         this.host = "localhost";
         this.port = 5000;
         this.list = new ListenThread();
         this.send = new SendThread();
-        this.secret = "HmacSHA256";
+        
+        this.ALGO_DES = "DES";
         this.deskey = "abcdABCD";
+        this.DES = Cipher.getInstance(ALGO_DES);
+        this.desKey = new SecretKeySpec(deskey.getBytes(), ALGO_DES);
+        
+        this.ALGO_HMAC = "HmacSHA256";
         this.hmackey = "hmacKeys";
+        this.sha256_HMAC = Mac.getInstance(ALGO_HMAC);
+        this.hmacKey = new SecretKeySpec(hmackey.getBytes(), ALGO_HMAC);
+        
     }
     
     public void start()
@@ -76,40 +95,47 @@ public class ChatClient {
     
     class ListenThread extends Thread
     {
+        @Override
         public void run(){
             try{
+                String cipherReceive = "";
                 String msgReceive = "";
                 String hashReceive = "";
+                String textReceive = "";
                 String hashCompare = "";
                 while(true)
                 {
                     msgReceive = rr.readLine();
 
                     /// decrypt message
-
+                    DES.init(Cipher.DECRYPT_MODE, desKey);
+                    System.out.println("LEN: " + cipherReceive.getBytes().length);
+                    msgReceive = Base64.encode(DES.doFinal(cipherReceive.getBytes()));
+                 
+                    
                     /// Separate the hash
                     hashReceive = msgReceive.substring(0, HASH_LEN);
-                    msgReceive = msgReceive.substring(HASH_LEN);
+                    textReceive = msgReceive.substring(HASH_LEN);
                     
                     
                     /// Hash the message (without the hash)
-                    Mac sha256_HMAC = Mac.getInstance(secret);
-                    SecretKeySpec secret_key = new SecretKeySpec(hmackey.getBytes(), secret);
-                    sha256_HMAC.init(secret_key);
-                    
-                    hashCompare = Base64.encode(sha256_HMAC.doFinal(msgReceive.getBytes()));
+                    sha256_HMAC.init(hmacKey);
+                    hashCompare = Base64.encode(sha256_HMAC.doFinal(textReceive.getBytes()));
                  
                     /// compare the hashes
                     // : )
-                    System.out.printf("\nHash Received: %s\nHash Computed: %s\n%s\n",
+                    System.out.printf("[RECEIVE] Cipher Text Received:\t%s\n", msgReceive);
+                    System.out.printf("[RECEIVE] Hash Received:\t%s\n"
+                            + "[RECEIVE] Hash Computed:\t%s\n%s\n",
                                             hashReceive, hashCompare, 
-                            (hashReceive.equals(hashCompare) ? "GOOD HASH" : "BAD HASH"));
+                            (hashReceive.equals(hashCompare) ? "[GOOD HASH]" : "[BAD HASH]"));
                     
-                    System.out.printf("Cipher Text Received: %s\n", "temp cipher");
-                    System.out.printf("Plain Text Received: %s\n\n", msgReceive);
+                    
+                    System.out.printf("[RECEIVE] Plain Text:\t%s\n\n", textReceive);
                 }
             }catch(Exception e)
             {
+                System.out.println("[RECV] " + e.getMessage());
                 System.exit(0);
             }
         }
@@ -117,6 +143,7 @@ public class ChatClient {
     
     class SendThread extends Thread
     {
+        @Override
         public void run(){
             try{                
                 sc = new Scanner(System.in);
@@ -126,24 +153,26 @@ public class ChatClient {
                 while(!input.equals("q")){
                     input = sc.nextLine();
                     
-                    Mac sha256_HMAC = Mac.getInstance(secret);
-                    SecretKeySpec secret_key = new SecretKeySpec(hmackey.getBytes(), secret);
-                    sha256_HMAC.init(secret_key);
-                
-                    
+                    sha256_HMAC.init(hmacKey);
                     hash = Base64.encode(sha256_HMAC.doFinal(input.getBytes()));
                     input = hash + input;
                     
                     /// encrypt DES
+                    DES.init(Cipher.ENCRYPT_MODE, desKey);
+                    System.out.println("LEN: " + input.getBytes().length);
+                    input = Base64.encode(DES.doFinal(input.getBytes()));
+                    System.out.println("LEN: " + input.length());
                     
-                    
+                    //System.out.printl;
                     wr.println(input);
                     
+                    System.out.println();
                 }
                 System.out.println("[ SEND THREAD EXIT ]");
                 
-            }catch(IllegalStateException | InvalidKeyException | NoSuchAlgorithmException e)
+            }catch(Exception e)
             {
+                System.out.println("[SEND] " + e.getMessage());
                 System.exit(0);
             }
             System.exit(0);
