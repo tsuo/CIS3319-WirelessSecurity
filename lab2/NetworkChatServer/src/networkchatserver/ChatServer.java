@@ -98,15 +98,21 @@ public class ChatServer {
                 String hashReceive = "";
                 String textReceive = "";
                 String hashCompare = "";
+                
+                byte[] msgBytes;
+                
                 while(true)
                 {
                     cipherReceive = rr.readLine();
 
                     /// decrypt message
                     DES.init(Cipher.DECRYPT_MODE, desKey);
-                    System.out.println("LEN: " + cipherReceive.getBytes().length);
-                    msgReceive = Base64.encode(DES.doFinal(cipherReceive.getBytes()));
-                 
+                    //System.out.println("LEN: " + cipherReceive.getBytes().length);
+                    
+                    msgBytes = Base64.decode(cipherReceive);
+                    msgReceive = Base64.encode(DES.doFinal(msgBytes));
+                    System.out.println("[recv] " + msgReceive.length());
+                    
                     /// Separate the hash
                     hashReceive = msgReceive.substring(0, HASH_LEN);
                     textReceive = msgReceive.substring(HASH_LEN);
@@ -114,7 +120,8 @@ public class ChatServer {
                     
                     /// Hash the message (without the hash)
                     sha256_HMAC.init(hmacKey);
-                    hashCompare = Base64.encode(sha256_HMAC.doFinal(textReceive.getBytes()));
+                    msgBytes = Base64.decode(textReceive);
+                    hashCompare = Base64.encode(sha256_HMAC.doFinal(msgBytes));
                  
                     /// compare the hashes
                     // : )
@@ -142,20 +149,22 @@ public class ChatServer {
             try{
                 sc = new Scanner(System.in);
                 String input = "";
+                byte[] inputBytes;
                 
                 while(!input.equals("q")){
                     input = sc.nextLine();
+                    inputBytes = Base64.decode(input);
                     
                     sha256_HMAC.init(hmacKey);
-                    hash = Base64.encode(sha256_HMAC.doFinal(input.getBytes()));
+                    hash = Base64.encode(sha256_HMAC.doFinal(inputBytes));
                     input = hash + input;
+                    inputBytes = Base64.decode(input);
                     
                     /// encrypt DES
                     DES.init(Cipher.ENCRYPT_MODE, desKey);
                     System.out.println("LEN: " + input.getBytes().length);
-                    input = Base64.encode(DES.doFinal(input.getBytes()));
+                    input = Base64.encode(DES.doFinal(inputBytes));
                     System.out.println("LEN: " + input.length());
-                    
                     
                     //System.out.printl;
                     wr.println(input);
