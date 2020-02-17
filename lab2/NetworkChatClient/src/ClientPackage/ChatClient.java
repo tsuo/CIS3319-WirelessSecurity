@@ -6,12 +6,15 @@
 package ClientPackage;
 
 
+import com.sun.org.apache.xml.internal.security.exceptions.Base64DecodingException;
 import com.sun.org.apache.xml.internal.security.utils.Base64;
 import java.io.*;
 import java.net.*;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -31,7 +34,10 @@ public class ChatClient {
     private String hash;
     private String msgReceive;
     final private String secret;
+    final private String deskey;
+    final private String hmackey;
     
+    final private int HASH_LEN = 44;
     
     ListenThread list;
     SendThread send;
@@ -44,12 +50,13 @@ public class ChatClient {
         this.list = new ListenThread();
         this.send = new SendThread();
         this.secret = "HmacSHA256";
-        this.msgReceive = "";
-        
+        this.deskey = "abcdABCD";
+        this.hmackey = "hmacKeys";
     }
     
     public void start()
     {
+        System.out.println("[ ATTEMPTING TO CONNECT TO HOST. . . ]");
         try{
             this.sock = new Socket(this.host, this.port);
             this.in = this.sock.getInputStream();
@@ -58,9 +65,11 @@ public class ChatClient {
             this.wr = new PrintWriter(this.out, true);
             
         }catch(Exception e){
-            System.out.println("ERROR CONNECT TO HOST");
+            System.out.println("[ . . .ERROR CONNECTING TO HOST ]");
             System.exit(0);
         }
+        
+        System.out.println("[ . . .SUCCESSFULLY CONNECTED TO HOST ]\n");
         this.list.start();
         this.send.start();
     }
@@ -69,23 +78,36 @@ public class ChatClient {
     {
         public void run(){
             try{
-               
-                
-                msgReceive = rr.readLine();
-                
-                /// decrypt message
+                String msgReceive = "";
+                String hashReceive = "";
+                String hashCompare = "";
+                while(true)
+                {
+                    msgReceive = rr.readLine();
 
-                /// Separate the hash
+                    /// decrypt message
 
-                /// Decrypt the hash
-
-                /// Hash the message (without the hash)
-
-                /// compare the hashes
-                // : )
-                
-                System.out.println("Received: " + msgReceive);
-                
+                    /// Separate the hash
+                    hashReceive = msgReceive.substring(0, HASH_LEN);
+                    msgReceive = msgReceive.substring(HASH_LEN);
+                    
+                    
+                    /// Hash the message (without the hash)
+                    Mac sha256_HMAC = Mac.getInstance(secret);
+                    SecretKeySpec secret_key = new SecretKeySpec(hmackey.getBytes(), secret);
+                    sha256_HMAC.init(secret_key);
+                    
+                    hashCompare = Base64.encode(sha256_HMAC.doFinal(msgReceive.getBytes()));
+                 
+                    /// compare the hashes
+                    // : )
+                    System.out.printf("\nHash Received: %s\nHash Computed: %s\n%s\n",
+                                            hashReceive, hashCompare, 
+                            (hashReceive.equals(hashCompare) ? "GOOD HASH" : "BAD HASH"));
+                    
+                    System.out.printf("Cipher Text Received: %s\n", "temp cipher");
+                    System.out.printf("Plain Text Received: %s\n\n", msgReceive);
+                }
             }catch(Exception e)
             {
                 System.exit(0);
@@ -105,12 +127,17 @@ public class ChatClient {
                     input = sc.nextLine();
                     
                     Mac sha256_HMAC = Mac.getInstance(secret);
-                    SecretKeySpec secret_key = new SecretKeySpec(input.getBytes(), secret);
+                    SecretKeySpec secret_key = new SecretKeySpec(hmackey.getBytes(), secret);
                     sha256_HMAC.init(secret_key);
                 
+                    
                     hash = Base64.encode(sha256_HMAC.doFinal(input.getBytes()));
-    
-                    wr.println(hash);
+                    input = hash + input;
+                    
+                    /// encrypt DES
+                    
+                    
+                    wr.println(input);
                     
                 }
                 System.out.println("[ SEND THREAD EXIT ]");

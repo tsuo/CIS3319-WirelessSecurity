@@ -27,8 +27,10 @@ public class ChatServer {
     private Socket clientSocket;
     private String hash;
     final private String secret;
+    final private String deskey;
+    final private String hmackey;
     
-    
+    final private int HASH_LEN = 44;
     
     ListenThread list;
     SendThread send;
@@ -41,6 +43,8 @@ public class ChatServer {
         this.port = 5000;
         this.clientSocket = null;
         this.secret = "HmacSHA256";
+        this.deskey = "abcdABCD";
+        this.hmackey = "hmacKeys";
     }
     
     public void start()
@@ -50,7 +54,7 @@ public class ChatServer {
             this.servSocket = new ServerSocket(this.port);
             System.out.println("[ SERVER AWAITING CLIENT. . . ]");
             this.clientSocket = this.servSocket.accept();
-            System.out.println("[ . . .SERVER ACCEPTED CLIENT ]");
+            System.out.println("[ . . .SERVER ACCEPTED CLIENT ]\n");
             
             this.in = this.clientSocket.getInputStream();
             this.rr = new BufferedReader(new InputStreamReader(this.in));
@@ -58,7 +62,7 @@ public class ChatServer {
             this.wr = new PrintWriter(this.out, true);
         }
         catch(Exception e){
-            System.out.println("Error port");
+            System.out.println("[ . . .ERROR ]");
             System.exit(0);
         }
         this.list.start();
@@ -71,24 +75,35 @@ public class ChatServer {
         public void run(){
             try{
                 String msgReceive = "";
-                while(!msgReceive.equals("q\n"))
+                String hashReceive = "";
+                String hashCompare = "";
+                while(true)
                 {
                     msgReceive = rr.readLine();
                     
                     /// decrypt message
                     
                     /// Separate the hash
+                    hashReceive = msgReceive.substring(0, HASH_LEN);
+                    msgReceive = msgReceive.substring(HASH_LEN);
                     
-                    /// Decreypt the hash
                     
                     /// Hash the message (without the hash)
+                    Mac sha256_HMAC = Mac.getInstance(secret);
+                    SecretKeySpec secret_key = new SecretKeySpec(hmackey.getBytes(), secret);
+                    sha256_HMAC.init(secret_key);
                     
+                    hashCompare = Base64.encode(sha256_HMAC.doFinal(msgReceive.getBytes()));
+                 
                     /// compare the hashes
                     // : )
+                    System.out.printf("\nHash Received: %s\nHash Computed: %s\n%s\n",
+                                            hashReceive, hashCompare, 
+                            (hashReceive.equals(hashCompare) ? "GOOD HASH" : "BAD HASH"));
                     
-                    System.out.println("Received: " + msgReceive);
+                    System.out.printf("Cipher Text Received: %s\n", "temp cipher");
+                    System.out.printf("Plain Text Received: %s\n\n",msgReceive);
                 }
-                
             }catch(Exception e)
             {
                 System.exit(0);
@@ -108,12 +123,16 @@ public class ChatServer {
                     input = sc.nextLine();
                     
                     Mac sha256_HMAC = Mac.getInstance(secret);
-                    SecretKeySpec secret_key = new SecretKeySpec(input.getBytes(), secret);
+                    SecretKeySpec secret_key = new SecretKeySpec(hmackey.getBytes(), secret);
                     sha256_HMAC.init(secret_key);
-                
-                    hash = Base64.encode(sha256_HMAC.doFinal(input.getBytes()));
                     
-                    wr.println(hash);
+                    hash = Base64.encode(sha256_HMAC.doFinal(input.getBytes()));
+                    input = hash + input;
+                    
+                    /// encrypt DES
+                    
+                    
+                    wr.println(input);
                 }
                 System.out.println("[ SEND THREAD EXIT ]");
                 
