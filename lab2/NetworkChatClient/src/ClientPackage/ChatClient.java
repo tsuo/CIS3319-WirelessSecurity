@@ -6,9 +6,14 @@
 package ClientPackage;
 
 
+import com.sun.org.apache.xml.internal.security.utils.Base64;
 import java.io.*;
 import java.net.*;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Scanner;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  *
@@ -23,6 +28,10 @@ public class ChatClient {
     private String host;
     private int port;
     private Socket sock;
+    private String hash;
+    private String msgReceive;
+    final private String secret;
+    
     
     ListenThread list;
     SendThread send;
@@ -34,6 +43,9 @@ public class ChatClient {
         this.port = 5000;
         this.list = new ListenThread();
         this.send = new SendThread();
+        this.secret = "HmacSHA256";
+        this.msgReceive = "";
+        
     }
     
     public void start()
@@ -58,7 +70,7 @@ public class ChatClient {
         public void run(){
             try{
                
-                String msgReceive = "";
+                
                 msgReceive = rr.readLine();
                 
                 /// decrypt message
@@ -92,22 +104,18 @@ public class ChatClient {
                 while(!input.equals("q")){
                     input = sc.nextLine();
                     
-                    /// hash input
+                    Mac sha256_HMAC = Mac.getInstance(secret);
+                    SecretKeySpec secret_key = new SecretKeySpec(input.getBytes(), secret);
+                    sha256_HMAC.init(secret_key);
                 
-                    /// encrypt the hash
-
-                    /// append the has to message
-
-                    /// encrypt entire message+hash
-
-                    /// send to user
-                    
-                    wr.println(input);
+                    hash = Base64.encode(sha256_HMAC.doFinal(input.getBytes()));
+    
+                    wr.println(hash);
                     
                 }
                 System.out.println("[ SEND THREAD EXIT ]");
                 
-            }catch(Exception e)
+            }catch(IllegalStateException | InvalidKeyException | NoSuchAlgorithmException e)
             {
                 System.exit(0);
             }
