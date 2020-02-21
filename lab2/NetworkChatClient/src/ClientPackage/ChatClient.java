@@ -12,10 +12,17 @@ import java.io.*;
 import java.net.*;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.KeyGenerator;
 import javax.crypto.Mac;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
@@ -134,10 +141,36 @@ public class ChatClient {
                     hash = Base64.encode(sha256_HMAC.doFinal(input.getBytes()));
                     input = hash + input;
                     
-                    /// encrypt DES
+                    /// encrypt 
+                    KeyGenerator key = KeyGenerator.getInstance("DES");
+                    SecretKey mykey = key.generateKey();
+                    try {
+                        
+                    Cipher desCipher;
+                    
+                    desCipher = Cipher.getInstance("DES");
+                    
+                    desCipher.init(Cipher.ENCRYPT_MODE, mykey);
+                    
+                    byte[] text = input.getBytes();
+                    
+                    System.out.println("Text in bytes" +  Arrays.toString(text));
+                    
+                    byte[] textEncry = desCipher.doFinal(text);
+                    
+                    System.out.println("Text Encyrpted" +  Arrays.toString(textEncry));
+                    
+                    byte[] textDecrypted = desCipher.doFinal(textEncry);
+                    
+                    wr.println(Arrays.toString(textDecrypted));
+                        
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());    
+                    }
                     
                     
-                    wr.println(input);
+                    
+                    
                     
                 }
                 System.out.println("[ SEND THREAD EXIT ]");
