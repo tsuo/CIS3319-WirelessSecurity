@@ -9,7 +9,12 @@ import com.sun.org.apache.xml.internal.security.utils.Base64;
 import java.io.*;
 import java.net.*;
 import java.util.Scanner;
+import javax.crypto.Cipher;
 import javax.crypto.Mac;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.DESKeySpec;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
@@ -17,10 +22,12 @@ import javax.crypto.spec.SecretKeySpec;
  * @author tsuoi
  */
 public class ChatServer {
-    private PrintWriter wr;
-    private BufferedReader rr;
-    private OutputStream out;
-    private InputStream in;
+    private DataOutputStream wr;
+    private DataInputStream rr;
+    //private PrintWriter wr;
+    //private BufferedReader rr;
+    //private OutputStream out;
+    //private InputStream in;
     
     private int port;
     private ServerSocket servSocket;
@@ -56,10 +63,10 @@ public class ChatServer {
             this.clientSocket = this.servSocket.accept();
             System.out.println("[ . . .SERVER ACCEPTED CLIENT ]\n");
             
-            this.in = this.clientSocket.getInputStream();
-            this.rr = new BufferedReader(new InputStreamReader(this.in));
-            this.out = this.clientSocket.getOutputStream();
-            this.wr = new PrintWriter(this.out, true);
+            //this.in = this.clientSocket.getInputStream();
+            this.rr = new DataInputStream(this.clientSocket.getInputStream());
+            //this.out = this.clientSocket.getOutputStream();
+            this.wr = new DataOutputStream(this.clientSocket.getOutputStream());
         }
         catch(Exception e){
             System.out.println("[ . . .ERROR ]");
@@ -75,17 +82,49 @@ public class ChatServer {
         public void run(){
             try{
                 String msgReceive = "";
+                byte[] msgBytes;
                 String hashReceive = "";
                 String hashCompare = "";
+                /// encrypt 
+                SecretKeyFactory key = SecretKeyFactory.getInstance("DES");
+                    DESKeySpec deskey = new DESKeySpec("12345678".getBytes());
+                    SecretKey mykey = key.generateSecret(deskey);
+                    //byte[] enc = mykey.getEncoded();
+                    //for(int i = 0; i < enc.length; i++)
+                    //{
+                    //    System.out.println(enc[i]);
+                    //}
+                    
                 while(true)
                 {
-                    msgReceive = rr.readLine();
+                    byte[] buf = new byte[256];
+                    //buf[63] = 1;
+                    //msgReceive = 
+                    rr.readFully(buf, 0, 256);
+                    System.out.println("Encrypted Received: " + new String(buf, "UTF-8"));
+                    //msgBytes = msgReceive.getBytes("UTF-16");
+                    
+                    //for(int i = 0; i < buf.length; i++){
+                    //    System.out.print(buf[i] + " ");
+                    //}
                     
                     /// decrypt message
+                    //System.out.println(msgBytes.length + ",|" + msgReceive +"|");
                     
+                    Cipher desCipher;
+                    desCipher = Cipher.getInstance("DES/CBC/NoPadding");
+                    desCipher.init(Cipher.DECRYPT_MODE, mykey, new IvParameterSpec(new byte[8]));
+                    byte[] dec = desCipher.doFinal(buf);
+                    //for(int i = 0; i < dec.length; i++){
+                    //    System.out.print(dec[i] + " ");
+                    //}
+                    String textDecrypted = new String(desCipher.doFinal(buf), "UTF-8");
+                    System.out.println("Decrypted DES: " +  textDecrypted);     
+                        
+                        
                     /// Separate the hash
-                    hashReceive = msgReceive.substring(0, HASH_LEN);
-                    msgReceive = msgReceive.substring(HASH_LEN);
+                    hashReceive = textDecrypted.substring(0, HASH_LEN);
+                    msgReceive = textDecrypted.substring(HASH_LEN);
                     
                     
                     /// Hash the message (without the hash)
@@ -93,8 +132,8 @@ public class ChatServer {
                     SecretKeySpec secret_key = new SecretKeySpec(hmackey.getBytes(), secret);
                     sha256_HMAC.init(secret_key);
                     
-                    hashCompare = Base64.encode(sha256_HMAC.doFinal(msgReceive.getBytes()));
-                 
+                    //System.out.println("Len:" +msgReceive.trim().length() +"MESSAGE: |"+msgReceive+"|");
+                    hashCompare = Base64.encode(sha256_HMAC.doFinal(msgReceive.trim().getBytes()));
                     /// compare the hashes
                     // : )
                     System.out.printf("\nHash Received: %s\nHash Computed: %s\n%s\n",
@@ -106,6 +145,7 @@ public class ChatServer {
                 }
             }catch(Exception e)
             {
+                System.out.println(e.getMessage());
                 System.exit(0);
             }
         }
@@ -132,7 +172,7 @@ public class ChatServer {
                     /// encrypt DES
                     
                     
-                    wr.println(input);
+                    wr.write(new byte[]{0,0});
                 }
                 System.out.println("[ SEND THREAD EXIT ]");
                 
