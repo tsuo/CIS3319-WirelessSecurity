@@ -101,7 +101,7 @@ public class ChatServer {
                     //buf[63] = 1;
                     //msgReceive = 
                     rr.readFully(buf, 0, 256);
-                    System.out.println("Encrypted Received: " + new String(buf, "UTF-8"));
+                    //System.out.println("Encrypted Received: " + new String(buf, "UTF-8"));
                     //msgBytes = msgReceive.getBytes("UTF-16");
                     
                     //for(int i = 0; i < buf.length; i++){
@@ -140,7 +140,7 @@ public class ChatServer {
                                             hashReceive, hashCompare, 
                             (hashReceive.equals(hashCompare) ? "GOOD HASH" : "BAD HASH"));
                     
-                    System.out.printf("Cipher Text Received: %s\n", "temp cipher");
+                    System.out.printf("Cipher Text Received: %s\n", new String(buf, "UTF-8"));
                     System.out.printf("Plain Text Received: %s\n\n",msgReceive);
                 }
             }catch(Exception e)
@@ -157,24 +157,72 @@ public class ChatServer {
             try{
                 sc = new Scanner(System.in);
                 String input = "";
-             
-                
+
+
                 while(!input.equals("q")){
                     input = sc.nextLine();
-                    
+
                     Mac sha256_HMAC = Mac.getInstance(secret);
                     SecretKeySpec secret_key = new SecretKeySpec(hmackey.getBytes(), secret);
                     sha256_HMAC.init(secret_key);
-                    
+
+                    //System.out.println("Len:" +input.length() +"INPUT IS: |"+input+"|");
                     hash = Base64.encode(sha256_HMAC.doFinal(input.getBytes()));
                     input = hash + input;
-                    
-                    /// encrypt DES
-                    
-                    
-                    wr.write(new byte[]{0,0});
+
+                    System.out.println("Hash: " + hash);
+                    /// encrypt
+                    //KeyGenerator key = KeyGenerator.getInstance("DES");
+                    SecretKeyFactory key = SecretKeyFactory.getInstance("DES");
+                    DESKeySpec deskey = new DESKeySpec("12345678".getBytes());
+                    SecretKey mykey = key.generateSecret(deskey);
+
+
+                    try {
+
+                        Cipher desCipher;
+
+                        desCipher = Cipher.getInstance("DES/CBC/NoPadding");
+
+                        desCipher.init(Cipher.ENCRYPT_MODE, mykey, new IvParameterSpec(new byte[8]));
+
+                        byte[] buf1 = new byte[256];
+                        byte[] text = input.getBytes("UTF-8");
+                        for(int i = 0; i < text.length; i++){
+                            buf1[i] = text[i];
+                        }
+                        
+                        System.out.println("Plain Text WITH HASH to Send: " + input);
+                        //System.out.println("Text1: " +  new String(text, "UTF-8"));
+
+                        byte[] textEncry = desCipher.doFinal(buf1);
+                        byte[] buf2 = new byte[256];
+                        for(int i = 0; i < buf2.length; i++){
+                            buf2[i] = textEncry[i];
+                            //else buf2[i] = 1;
+                        }
+
+                        System.out.println("Text Encrypted: " +  new String(textEncry, "UTF-8"));
+
+                        //desCipher = Cipher.getInstance("DES");
+                        //desCipher.init(Cipher.DECRYPT_MODE, mykey);
+                        //byte[] textDecrypted = desCipher.doFinal(textEncry);
+                        //System.out.println("Text2: " +  new String(textDecrypted, "UTF-8"));
+
+                        
+                        //for (int i = 0; i < buf2.length; i++) {
+                        //    System.out.print(buf2[i] +" ");
+                        //}
+                        //buf2[63] = 1;
+                        wr.write(buf2);
+                        //wr.println(textEncry.length + "," + new String(textEncry, "UTF-8"));
+
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
+                    }
                 }
                 System.out.println("[ SEND THREAD EXIT ]");
+
                 
             }catch(Exception e)
             {
